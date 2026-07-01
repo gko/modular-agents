@@ -25,6 +25,13 @@
         "modular",
         "prompt-engineering"
     ],
+    "files": [
+        "modular-agents.ts",
+        "core.ts",
+        "README.md",
+        "LICENSE",
+        "package.json"
+    ],
     "dependencies": {
         "yaml": "^2.9.0"
     },
