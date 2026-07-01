@@ -55,4 +55,4 @@ The plugin will recursively find all `.md` and `.txt` files and combine them int
 
 ## License
 
-MIT
+This project is open source and available under the [MIT](/LICENSE) license.
