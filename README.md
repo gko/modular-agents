@@ -17,7 +17,7 @@
 ### From npm (Recommended)
 
 ```bash
-opencode plugin install modular-agents
+opencode plugin modular-agents --global
 ```
 
 Or add it to your `opencode.json`:
