@@ -1,5 +1,7 @@
 # Modular Agents for OpenCode
 
+[![npmjs.com](https://img.shields.io/npm/v/modular-agents.svg?color=blue)](https://www.npmjs.com/modular-agents) [![tests](https://github.com/gko/modular-agents/actions/workflows/test.yml/badge.svg)](https://github.com/gko/modular-agents/actions/workflows/test.yml)
+
 > Define agents as folders with multiple maintainable prompt files.
 
 ## Features
