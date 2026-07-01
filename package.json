@@ -6,6 +6,15 @@
     "author": "",
     "type": "module",
     "main": "modular-agents.ts",
+    "author": "Konstantin Gorodinskii <mail@konstantin.io>",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gko/modular-agents.git"
+    },
+    "homepage": "https://github.com/gko/modular-agents#readme",
+    "bugs": {
+        "url": "https://github.com/gko/modular-agents/issues"
+    },
     "keywords": [
         "opencode",
         "opencode-plugin",
