@@ -1,6 +1,6 @@
 {
     "name": "modular-agents",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Modular agent support for OpenCode — define agents as folders with multiple prompt files",
     "license": "MIT",
     "type": "module",
