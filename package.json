@@ -3,7 +3,6 @@
     "version": "0.1.0",
     "description": "Modular agent support for OpenCode — define agents as folders with multiple prompt files",
     "license": "MIT",
-    "author": "",
     "type": "module",
     "main": "modular-agents.ts",
     "author": "Konstantin Gorodinskii <mail@konstantin.io>",
