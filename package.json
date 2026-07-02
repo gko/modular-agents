@@ -16,7 +16,8 @@
     },
     "scripts": {
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "prepublishOnly": "npm test"
     },
     "keywords": [
         "opencode",
@@ -27,14 +28,10 @@
     ],
     "files": [
         "modular-agents.ts",
-        "core.ts",
         "README.md",
         "LICENSE",
         "package.json"
     ],
-    "dependencies": {
-        "yaml": "^2.9.0"
-    },
     "devDependencies": {
         "vitest": "^3.0.0"
     },
