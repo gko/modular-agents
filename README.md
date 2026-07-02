@@ -8,7 +8,6 @@
 
 - Agents as folders instead of single files
 - Recursively includes all `.md` and `.txt` files
-- Deduplicates files automatically
 - Supports all agent configuration fields via YAML frontmatter
 - Works alongside native single-file agents
 
