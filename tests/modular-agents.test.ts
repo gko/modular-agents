@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { assembleAgents } from "../core";
+import { ModularAgentsPlugin } from "../modular-agents";
 
-describe("assembleAgents", () => {
+const { enrichAgents } = (await ModularAgentsPlugin({})).__test__;
+
+describe("enrichAgents", () => {
     let tempDir: string;
 
     beforeEach(async () => {
@@ -25,83 +27,107 @@ describe("assembleAgents", () => {
         }
     }
 
-    it("should create agent from index.md only", async () => {
+    it("should enrich an existing agent (simulating OpenCode parsing index.md)", async () => {
         await createFiles({
-            "my-agent/index.md": "---\nmode: subagent\n---\nYou are helpful.",
+            "my-agent/index.md":
+                "---\nmode: primary\n---\nYou are a helpful assistant.",
+            "my-agent/rules.md": "Always follow best practices.",
+            "my-agent/examples/example1.md": "Here is a good example.",
         });
 
-        const config: any = {};
-        await assembleAgents(config, tempDir);
+        const config: any = {
+            agent: {
+                "my-agent": {
+                    mode: "primary",
+                    prompt: "You are a helpful assistant.",
+                },
+            },
+        };
 
-        expect(config.agent["my-agent"]).toBeDefined();
-        expect(config.agent["my-agent"].mode).toBe("subagent");
-        expect(config.agent["my-agent"].prompt).toContain("You are helpful.");
-    });
+        await enrichAgents(config, tempDir);
 
-    it("should include files from nested folders", async () => {
-        await createFiles({
-            "deep-agent/index.md": "Base prompt",
-            "deep-agent/rules/core.md": "Core rules here",
-            "deep-agent/examples/example1.md": "Example content",
-        });
-
-        const config: any = {};
-        await assembleAgents(config, tempDir);
-
-        const prompt = config.agent["deep-agent"].prompt;
-        expect(prompt).toContain("### rules/core.md");
+        const prompt = config.agent["my-agent"].prompt;
+        expect(prompt).toContain("You are a helpful assistant.");
+        expect(prompt).toContain("### rules.md");
+        expect(prompt).toContain("Always follow best practices.");
         expect(prompt).toContain("### examples/example1.md");
     });
 
-    it("should use folder name when there is no index.md", async () => {
+    it("should include index.md from subfolders as supporting content", async () => {
         await createFiles({
-            "no-index-agent/style.md": "Be concise and clear",
-            "no-index-agent/examples.md": "Show good examples",
+            "deep-agent/index.md": "Base prompt from index.md",
+            "deep-agent/section/index.md":
+                "This is content from a subfolder index.md",
+            "deep-agent/notes.md": "Additional notes",
+        });
+
+        const config: any = {
+            agent: {
+                "deep-agent": { prompt: "Base prompt from index.md" },
+            },
+        };
+
+        await enrichAgents(config, tempDir);
+
+        const prompt = config.agent["deep-agent"].prompt;
+        expect(prompt).toContain("### section/index.md");
+        expect(prompt).toContain("This is content from a subfolder index.md");
+        expect(prompt).toContain("### notes.md");
+    });
+
+    it("should create agent from files only if no index.md exists", async () => {
+        await createFiles({
+            "no-index-agent/rules.md": "Be concise.",
+            "no-index-agent/style.md": "Use clear language.",
         });
 
         const config: any = {};
-        await assembleAgents(config, tempDir);
+        await enrichAgents(config, tempDir);
 
         expect(config.agent["no-index-agent"]).toBeDefined();
-        expect(config.agent["no-index-agent"].prompt).toContain("Be concise");
+        expect(config.agent["no-index-agent"].prompt).toContain("### rules.md");
+        expect(config.agent["no-index-agent"].prompt).toContain("### style.md");
     });
 
-    it("should handle YAML parse errors gracefully and trigger error log", async () => {
-        const mockLog = vi.fn();
-
+    it("should strip frontmatter from additional files", async () => {
         await createFiles({
-            "bad-yaml/index.md":
-                "---\ninvalid: yaml: here\n---\nPrompt content",
+            "agent-with-yaml/index.md": "Base prompt",
+            "agent-with-yaml/config.txt":
+                "---\nname: something\n---\nThis is actual content.",
         });
 
-        const config: any = {};
-        await assembleAgents(config, tempDir, mockLog);
+        const config: any = {
+            agent: { "agent-with-yaml": { prompt: "Base prompt" } },
+        };
 
-        expect(config.agent["bad-yaml"]).toBeDefined();
-        expect(config.agent["bad-yaml"].prompt).toContain("Prompt content");
+        await enrichAgents(config, tempDir);
 
-        // Ensure the error was logged
-        expect(mockLog).toHaveBeenCalledWith(
-            "error",
-            "YAML parse error in bad-yaml/index.md",
-        );
+        const prompt = config.agent["agent-with-yaml"].prompt;
+        expect(prompt).toContain("### config.txt");
+        expect(prompt).toContain("This is actual content.");
+        expect(prompt).not.toContain("name: something");
     });
 
-    it("should trigger success log when an agent is registered", async () => {
-        const mockLog = vi.fn();
-
+    it("should sort additional files alphabetically by relative path", async () => {
         await createFiles({
-            "good-agent/index.md": "---\nmode: primary\n---\nAll good.",
+            "sorted-agent/index.md": "Base",
+            "sorted-agent/z-last.md": "Z content",
+            "sorted-agent/a-first.md": "A content",
+            "sorted-agent/b-middle.md": "B content",
         });
 
-        const config: any = {};
-        await assembleAgents(config, tempDir, mockLog);
+        const config: any = {
+            agent: { "sorted-agent": { prompt: "Base" } },
+        };
 
-        // Ensure the success registration was logged
-        expect(mockLog).toHaveBeenCalledWith(
-            "info",
-            "Registered modular agent: good-agent",
-            { folder: "good-agent" },
-        );
+        await enrichAgents(config, tempDir);
+
+        const prompt = config.agent["sorted-agent"].prompt;
+        const aIndex = prompt.indexOf("### a-first.md");
+        const bIndex = prompt.indexOf("### b-middle.md");
+        const zIndex = prompt.indexOf("### z-last.md");
+
+        expect(aIndex).toBeLessThan(bIndex);
+        expect(bIndex).toBeLessThan(zIndex);
     });
 });
